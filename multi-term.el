@@ -245,8 +245,11 @@ If this is nil, setup to environment variable of `SHELL'."
   :group 'multi-term)
 
 (defcustom multi-term-program-switches nil
-  "The command-line switches to pass to the term program."
-  :type 'string
+  "The command-line switches (arguments) to pass to `multi-term-program`.
+  e.g:
+    (setq multi-term-program \"ls\")
+    (setq multi-term-program-switches (list \"-l\" \"-a\"))"
+  :type '(repeat string)
   :group 'multi-term)
 
 (defcustom multi-term-try-create t
@@ -540,7 +543,7 @@ If option DEDICATED-WINDOW is `non-nil' will create dedicated `multi-term' windo
           (setq shell-name (read-from-minibuffer "Run program: " shell-name)))
       ;; Make term, details to see function `make-term' in `term.el'.
       (if multi-term-program-switches
-          (make-term term-name shell-name nil multi-term-program-switches)
+          (apply #'make-term term-name shell-name nil multi-term-program-switches)
           (make-term term-name shell-name)))))
 
 
