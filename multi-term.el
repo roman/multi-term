@@ -127,6 +127,9 @@
 
 ;;; Change log:
 ;;
+;; 2012/11/20
+;;      * Fix limitation on the usage of option `multi-term-program-switches'.
+;;
 ;; 2009/07/04
 ;;      * Add new option `multi-term-dedicated-select-after-open-p'.
 ;;
