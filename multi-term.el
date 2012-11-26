@@ -5,7 +5,7 @@
 ;; Copyright (C) 2008, 2009, Andy Stewart, all rights reserved.
 ;; Copyright (C) 2010, ahei, all rights reserved.
 ;; Created: <2008-09-19 23:02:42>
-;; Version: 0.8.8
+;; Version: 0.8.9
 ;; Last-Updated: <2010-05-13 00:40:24 Thursday by ahei>
 ;; URL: http://www.emacswiki.org/emacs/download/multi-term.el
 ;; Keywords: term, terminal, multiple buffer
@@ -71,6 +71,8 @@
 ;; Below are the commands you can use:
 ;;
 ;;      `multi-term'                    Create a new term buffer.
+;;      `multi-term-persistent'         Create a new term buffer that
+;;                                      lives in a GNU screen session.
 ;;      `multi-term-next'               Switch to next term buffer.
 ;;      `multi-term-prev'               Switch to previous term buffer.
 ;;      `multi-term-dedicated-open'     Open dedicated term window.
@@ -126,6 +128,9 @@
 ;;
 
 ;;; Change log:
+;;
+;; 2012/11/26
+;;      * Add `multi-term-persistent' function to run shell on screen sessions
 ;;
 ;; 2012/11/20
 ;;      * Fix limitation on the usage of option `multi-term-program-switches'.
@@ -377,6 +382,7 @@ Default is nil."
   "The dedicated `multi-term' buffer.")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Interactive Functions ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;;;###autoload
 (defun multi-term ()
   "Create new term buffer.
@@ -390,6 +396,28 @@ Will prompt you shell name when you type `C-u' before this command."
     (multi-term-internal)
     ;; Switch buffer
     (switch-to-buffer term-buffer)))
+
+;; IMPORTANT: multi-term-program-switches won't work with
+;; persistent shells, given that GNU screen only accepts
+;; a file-path for the binary with no arguments.
+;;;###autoload
+(defun multi-term-persistent (&optional session-name screen-shell)
+  "Create new term buffer on a GNU screen session."
+  (interactive)
+  (setq multi-term-screen-session-name
+        (or session-name (read-from-minibuffer "Session name: ")))
+  (let* ((screen-shell (or screen-shell multi-term-program))
+         (multi-term-program "screen")
+         (multi-term-program-switches (list "-D" "-R"
+                                            "-S" multi-term-screen-session-name
+                                            "-s" screen-shell))
+         term-buffer)
+    (setq term-buffer (multi-term-get-buffer))
+    (set-buffer term-buffer)
+    (rename-buffer (format "*%s*" session-name))
+    (multi-term-internal)
+    (switch-to-buffer term-buffer)
+    term-buffer))
 
 (defun multi-term-next (&optional offset)
   "Go to the next term buffer.
@@ -501,6 +529,7 @@ Will prompt you shell name when you type `C-u' before this command."
   (term-send-raw-string "\C-r"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Utilise Functions ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defun multi-term-internal ()
   "Internal handle for `multi-term' buffer."
   ;; Add customize keystroke with `term-mode-hook'
@@ -713,6 +742,7 @@ Otherwise return nil."
         t nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Advice ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defadvice delete-other-windows (around multi-term-delete-other-window-advice activate)
   "This is advice to make `multi-term' avoid dedicated window deleted.
 Dedicated window can't deleted by command `delete-other-windows'."
